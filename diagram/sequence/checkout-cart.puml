@@ -1,0 +1,39 @@
+@startuml checkout cart
+actor User
+entity ShoppingCart
+entity PaymentEstimator
+entity PaymentProcessor
+entity OutdatePaymentScheduler
+
+Group Add product to cart
+    User -> ShoppingCart: Add items to cart
+    activate ShoppingCart
+    User -> ShoppingCart: View cart
+    opt
+        User -> ShoppingCart: Add promo
+    end
+    User -> ShoppingCart: Proceed to checkout
+    ShoppingCart --> User: Show checkout form
+    deactivate ShoppingCart
+end
+Group Checkout
+    User -> PaymentEstimator: Get payment estimate
+    activate PaymentEstimator
+    PaymentEstimator --> PaymentEstimator: Check stock, promo
+    PaymentEstimator --> User: Estimate report
+    deactivate PaymentEstimator
+    User -> PaymentProcessor: Request order confirmation
+    activate PaymentProcessor
+    PaymentProcessor --> PaymentProcessor: Product, Promo reservation
+    PaymentProcessor --> User: Allow confirm payment
+    deactivate PaymentProcessor
+end
+Group Check outdated payment
+    loop
+        note right of OutdatePaymentScheduler
+            Internal check for outdated payment
+            then remove to release product stock, promo
+        end note
+    end
+end
+@enduml

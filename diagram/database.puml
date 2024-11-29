@@ -1,0 +1,72 @@
+@startuml 1
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <u>x</u>
+entity users {
+    primary_key(id)
+    ---
+    name VARCHAR(255)
+    email VARCHAR(255)
+    password VARCHAR(255)
+    ' balance in usd
+    balance numeric(100,2)
+}
+entity shops {
+    primary_key(id)
+    ---
+    name VARCHAR(255)
+    foreign_key(user_id) USERS
+}
+entity categories {
+    primary_key(id)
+    ---
+    name VARCHAR(255)
+    description TEXT
+    path VARCHAR(50)
+}
+entity products {
+    primary_key(id)
+    ---
+    name VARCHAR(255)
+    description TEXT
+    category_id INTEGER
+    foreign_key(shop_id) SHOPS
+}
+entity product_options{
+    primary_key(id)
+    ---
+    name VARCHAR(255)
+    foreign_key(product_id) PRODUCTS
+    quantity INTEGER
+    price NUMERIC(100,2)
+}
+entity user_cart {
+    primary_key(id)
+    ---
+    foreign_key(product_id) PRODUCTS
+    quantity INTEGER
+}
+entity user_order {
+    primary_key(id)
+    ---
+    foreign_key(product_id) PRODUCTS
+    quantity INTEGER
+    price NUMERIC(100,2)
+}
+entity order_products {
+    primary_key(id)
+    ---
+    foreign_key(product_id) PRODUCTS
+    quantity INTEGER
+    price NUMERIC(100,2)
+}
+
+users ||--o{ shops : "has many"
+shops ||--o{ products : "has many"
+categories ||--o{ products : "has many"
+products ||--o{ product_options : "has many"
+users ||--o{ user_cart: "has many"
+user_cart |o--o| products: "link to one"
+
+users ||--o{ user_order: "has many"
+user_order ||--o{ order_products: "has many"
+@enduml
