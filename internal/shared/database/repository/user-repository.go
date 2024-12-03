@@ -1,68 +1,85 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
+	users_dto "http-server/internal/app/api/handler/orders/dto"
 	"http-server/internal/shared/database/entities"
-	"math/big"
+	"http-server/internal/shared/utils"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-type UserRepository struct {
+type OrderRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *gorm.DB) *OrderRepository {
+	return &OrderRepository{db: db}
 }
 
-func (r UserRepository) FindAll() ([]entities.Users, error) {
-	var users []entities.Users
+func (r OrderRepository) FindAll() ([]entities.Order, error) {
+	var users []entities.Order
 	result := r.db.Find(&users)
 	return users, result.Error
 }
 
-func (r UserRepository) FindByID(id uint64) (*entities.Users, error) {
-	var user *entities.Users
-	result := r.db.First(&user, id)
-	return user, result.Error
-}
-func (r UserRepository) FindByEmail(email string) (*entities.Users, error) {
-	var user *entities.Users
-	result := r.db.Where("email = ?", email).First(&user)
-	return user, result.Error
+func (r OrderRepository) FindByID(id uint64) (*entities.Order, error) {
+	var order *entities.Order
+	result := r.db.First(&order, id)
+	return order, result.Error
 }
 
-func (r UserRepository) Create(user entities.Users) (entities.Users, error) {
-	result := r.db.Create(&user)
-	return user, result.Error
+func (r OrderRepository) Create(order entities.Order) (entities.Order, error) {
+	result := r.db.Create(&order)
+	return order, result.Error
 }
 
-func (r UserRepository) Update(user entities.Users) error {
-	return r.db.Save(&user).Error
-}
-
-func (r UserRepository) Delete(id uint) error {
-	return r.db.Delete(&entities.Users{}, id).Error
-}
-
-func (r UserRepository) UpdateBalanceAtomic(id uint64) (*entities.Users, error) {
-	var user *entities.Users
+func (r OrderRepository) SaveOrderAndOutbox(dto users_dto.CreateOrderReqDto) (*entities.Order, error) {
+	order := entities.Order{
+		Status: "pending",
+		UserId: 999,
+	}
+	order.SetTicketOptions(utils.Map(dto.Cart, func(v users_dto.OrderTicketOptionReqDto) *entities.TicketOrderOption {
+		return &entities.TicketOrderOption{
+			EventId:         dto.EventId,
+			Amount:          v.Amount,
+			TotalPrice:      123,
+			DiscountedPrice: 999,
+		}
+	}))
+	uniqueOptionIds := utils.Map(dto.Cart, func(v users_dto.OrderTicketOptionReqDto) uint64 { return v.OptionId })
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, id).Error; err != nil {
+		var options []entities.TicketOption
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("option_id IN(?) AND event_id = ?",
+				uniqueOptionIds, dto.EventId).Find(&options).Error; err != nil {
 			return err
 		}
-		oldBalance, ok := new(big.Int).SetString(user.Balance, 10)
-		if !ok {
-			return errors.New("canot add balance")
+		if len(options) == 0 || (len(uniqueOptionIds) != len(options)) {
+			return errors.New("missmatch options count")
 		}
-		newBalance := oldBalance.Add(oldBalance, big.NewInt(10)).String()
-		user.Balance = newBalance
-		return tx.Exec("UPDATE users set balance = ? where id = ?", user.Balance, user.ID).Error
+		// minus stock value
+		for _, v := range dto.Cart {
+			res := tx.Exec(`UPDATE ticket_options SET current_capacity = current_capacity - ? WHERE id = ? AND current_capacity >= ?;`,
+				v.Amount, v.OptionId, v.Amount)
+			if res.RowsAffected != 1 {
+				if res.Error != nil {
+					return res.Error
+				}
+				return errors.New("error in updating ticket stock")
+			}
+		}
+		return tx.Create(&order).Error
+	}, &sql.TxOptions{
+		Isolation: sql.LevelReadUncommitted,
 	})
 	if err != nil {
-		return &entities.Users{}, errors.New("cannot update user balance")
+		fmt.Printf("err: %v\n", err)
+		return &entities.Order{}, err
 	}
-	return user, nil
+	return &order, nil
 }

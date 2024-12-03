@@ -1,0 +1,2 @@
+-- ALTER TABLE orders DROP CONSTRAINT users_email_unique;
+DROP TABLE TICKET_OPTIONS;

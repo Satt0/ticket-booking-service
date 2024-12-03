@@ -23,3 +23,6 @@ migrate-down:
 # docker
 docker-up: 
 	docker compose up -d --remove-orphans
+
+docker-build: 
+	docker build . -t booking:1.0.0

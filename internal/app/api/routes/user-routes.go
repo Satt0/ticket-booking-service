@@ -1,7 +1,7 @@
 package routes
 
 import (
-	users_handler "http-server/internal/app/api/handler/users"
+	ordershandler "http-server/internal/app/api/handler/orders"
 	"http-server/internal/shared/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -9,28 +9,19 @@ import (
 
 type UserRouting struct {
 	r          *gin.Engine
-	handlers   *users_handler.UserHandler
+	handlers   *ordershandler.UserHandler
 	middleware *middleware.MiddleWare
 }
 
 func (ur *UserRouting) SetUp() {
-	group := ur.r.Group("/users")
+	group := ur.r.Group("orders")
 	{
-		publicRoutes := group.Group("")
-		{
-			publicRoutes.GET("", ur.handlers.HandleGetAllUser)
-			publicRoutes.GET("/by-id", ur.handlers.HandleGetUserById)
-		}
-		privateRoutes := group.Group("")
-		{
-			privateRoutes.Use(ur.middleware.CreateAuthUserMiddleWare())
-			privateRoutes.GET("/my-profile", ur.handlers.HandleGetMyProfile)
-		}
-
+		group.POST("", ur.handlers.HandleCreateOrder)
+		group.GET("/all", ur.handlers.HandleGetMyProfile)
 	}
 
 }
-func NewUserRouting(r *gin.Engine, uh *users_handler.UserHandler, m *middleware.MiddleWare) *UserRouting {
+func NewUserRouting(r *gin.Engine, uh *ordershandler.UserHandler, m *middleware.MiddleWare) *UserRouting {
 	return &UserRouting{
 		r:          r,
 		handlers:   uh,

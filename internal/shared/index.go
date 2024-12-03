@@ -9,6 +9,7 @@ import (
 	"http-server/internal/shared/middleware"
 
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 )
 
 type SharedDeps struct {
@@ -17,15 +18,17 @@ type SharedDeps struct {
 	JwtUtils    *jwtutils.JwtUtils
 	Middlewares *middleware.MiddleWare
 	KafkaClient *kafka.KafkaClient
+	DB          *gorm.DB
 }
 
-func NewSharedDeps(log *logger.Logger, env *env.Env, jwtUtils *jwtutils.JwtUtils, middlewares *middleware.MiddleWare, kafkaClient *kafka.KafkaClient) *SharedDeps {
+func NewSharedDeps(log *logger.Logger, db *gorm.DB, env *env.Env, jwtUtils *jwtutils.JwtUtils, middlewares *middleware.MiddleWare, kafkaClient *kafka.KafkaClient) *SharedDeps {
 	return &SharedDeps{
 		Env:         env,
 		Logger:      log,
 		JwtUtils:    jwtUtils,
 		Middlewares: middlewares,
 		KafkaClient: kafkaClient,
+		DB:          db,
 	}
 }
 
@@ -35,6 +38,6 @@ var SharedModuleFx = fx.Options(
 	fx.Provide(jwtutils.NewJwtUtils),
 	fx.Provide(NewSharedDeps),
 	fx.Provide(middleware.NewMiddleWare),
-	database.DBConnection,
+	fx.Provide(database.NewDatabaseConnection),
 	kafka.KafkaModuleFx,
 )

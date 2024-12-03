@@ -8,15 +8,31 @@ export let options = {
 
 export default function () {
   // Replace with your actual API URL
-  const id = (Math.floor(Date.now() * Math.random()) % 4) + 1;
-//   const id =2
-  const url = "http://localhost:8000/users/by-id?id=" + id;
+  //   const id =2
+  const randomIndex = Math.floor(Math.z() * 4);
+  const randomCart = [
+    {
+      optionId: randomIndex + 1,
+      amount: 1,
+    },
+    // {
+    //   optionId: ((randomIndex + 1) % 4) + 1,
+    //   amount: 1,
+    // },
+  ];
+  const url = "http://localhost:8008/orders";
   // Send GET request
-  let { status } = http.get(url);
+  let { status, body } = http.post(
+    url,
+    JSON.stringify({
+      eventId: 1,
+      cart: randomCart.sort((a, b) => a.optionId - b.optionId),
+    })
+  );
 
   // Check the response status
   if (status !== 200) {
-    console.log(status, id);
+    console.log(status, body, randomCart);
   }
   check(status, {
     "is status 200": (status) => status === 200,

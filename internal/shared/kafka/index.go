@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"http-server/internal/shared/env"
 	"http-server/internal/shared/logger"
 	"time"
 
@@ -11,12 +12,13 @@ import (
 )
 
 type KafkaClient struct {
-	Writer *kafka.Writer
+	Writer    *kafka.Writer
+	brokerUrl string
 }
 
-func NewKafkaClient(lc fx.Lifecycle, logger *logger.Logger) *KafkaClient {
+func NewKafkaClient(lc fx.Lifecycle, logger *logger.Logger, env *env.Env) *KafkaClient {
 	writer := &kafka.Writer{
-		Addr:      kafka.TCP("localhost:9092"),
+		Addr:      kafka.TCP(env.KAFKA_BROKER),
 		BatchSize: 1,
 	}
 	lc.Append(fx.Hook{
@@ -31,14 +33,15 @@ func NewKafkaClient(lc fx.Lifecycle, logger *logger.Logger) *KafkaClient {
 		},
 	})
 	return &KafkaClient{
-		Writer: writer,
+		Writer:    writer,
+		brokerUrl: env.KAFKA_BROKER,
 	}
 }
 
 // consumer must be inited when used
 func (k *KafkaClient) CreateKafkaReader(topic string, groupId string) (*kafka.Reader, func()) {
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:          []string{"localhost:9092"},
+		Brokers:          []string{k.brokerUrl},
 		Topic:            topic,
 		GroupID:          groupId,
 		ReadBatchTimeout: time.Duration(1 * time.Second),

@@ -12,11 +12,10 @@ func (rgw *RoutesGateWay) SetUp() {
 		r.SetUp()
 	}
 }
-func NewRoutesGateWay(ur *UserRouting, ar *AuthRouting) *RoutesGateWay {
+func NewRoutesGateWay(ur *UserRouting) *RoutesGateWay {
 	return &RoutesGateWay{
 		ur,
-		ar,
 	}
 }
 
-var RoutesGateWayModule = fx.Options(fx.Provide(NewUserRouting), fx.Provide(NewAuthRouting), fx.Provide(NewRoutesGateWay))
+var RoutesGateWayModule = fx.Options(fx.Provide(NewUserRouting), fx.Provide(NewRoutesGateWay))

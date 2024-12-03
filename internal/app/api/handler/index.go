@@ -1,10 +1,9 @@
 package handler
 
 import (
-	auth_handler "http-server/internal/app/api/handler/auth"
-	users_handler "http-server/internal/app/api/handler/users"
+	ordershandler "http-server/internal/app/api/handler/orders"
 
 	"go.uber.org/fx"
 )
 
-var Handlers = fx.Options(fx.Provide(users_handler.NewUserHandler), fx.Provide(auth_handler.NewAuthHandler))
+var Handlers = fx.Options(fx.Provide(ordershandler.NewUserHandler))
