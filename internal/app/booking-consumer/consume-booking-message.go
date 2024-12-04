@@ -1,10 +1,20 @@
 package bookingjob
 
-func (service *BookingJob) handleConsumeBookingMessage(payload interface{}) error {
-	// check if user has any pending order
+import (
+	"encoding/json"
+	"fmt"
+)
 
-	// save order to db, include outbox record
+type Test struct {
+	TicketTypeId uint64 `json:"ticketTypeId"`
+	EventId      uint64 `json:"eventId"`
+	Amount       string `json:"amount"`
+}
 
-	// commit
+func (service *BookingJob) handleConsumeBookingMessage(payload []byte) error {
+	var x Test
+	err := json.Unmarshal(payload, &x)
+	fmt.Printf("err: %v\n", err)
+	fmt.Printf("x: %v\n", x)
 	return nil
 }

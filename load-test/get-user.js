@@ -9,18 +9,18 @@ export let options = {
 export default function () {
   // Replace with your actual API URL
   //   const id =2
-  const randomIndex = Math.floor(Math.z() * 4);
+  const randomIndex = Math.floor(Math.random() * 4);
   const randomCart = [
     {
       optionId: randomIndex + 1,
       amount: 1,
     },
-    // {
-    //   optionId: ((randomIndex + 1) % 4) + 1,
-    //   amount: 1,
-    // },
+    {
+      optionId: ((randomIndex + 1) % 4) + 1,
+      amount: 1,
+    },
   ];
-  const url = "http://localhost:8008/orders";
+  const url = "http://172.16.1.224:8008/orders";
   // Send GET request
   let { status, body } = http.post(
     url,

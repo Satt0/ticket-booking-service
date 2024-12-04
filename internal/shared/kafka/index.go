@@ -41,9 +41,9 @@ func NewKafkaClient(lc fx.Lifecycle, logger *logger.Logger, env *env.Env) *Kafka
 // consumer must be inited when used
 func (k *KafkaClient) CreateKafkaReader(topic string, groupId string) (*kafka.Reader, func()) {
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:          []string{k.brokerUrl},
-		Topic:            topic,
-		GroupID:          groupId,
+		Brokers: []string{k.brokerUrl},
+		Topic:   topic,
+		// GroupID:          groupId,
 		ReadBatchTimeout: time.Duration(1 * time.Second),
 		MaxBytes:         10e6, // 10MB
 

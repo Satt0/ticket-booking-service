@@ -1,15 +1,14 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	users_dto "http-server/internal/app/api/handler/orders/dto"
 	"http-server/internal/shared/database/entities"
 	"http-server/internal/shared/utils"
+	"strings"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type OrderRepository struct {
@@ -52,30 +51,31 @@ func (r OrderRepository) SaveOrderAndOutbox(dto users_dto.CreateOrderReqDto) (*e
 	}))
 	uniqueOptionIds := utils.Map(dto.Cart, func(v users_dto.OrderTicketOptionReqDto) uint64 { return v.OptionId })
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var options []entities.TicketOption
-		if err := tx.
-			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("option_id IN(?) AND event_id = ?",
-				uniqueOptionIds, dto.EventId).Find(&options).Error; err != nil {
-			return err
-		}
-		if len(options) == 0 || (len(uniqueOptionIds) != len(options)) {
-			return errors.New("missmatch options count")
-		}
 		// minus stock value
-		for _, v := range dto.Cart {
-			res := tx.Exec(`UPDATE ticket_options SET current_capacity = current_capacity - ? WHERE id = ? AND current_capacity >= ?;`,
-				v.Amount, v.OptionId, v.Amount)
-			if res.RowsAffected != 1 {
-				if res.Error != nil {
-					return res.Error
-				}
-				return errors.New("error in updating ticket stock")
+		// todo use bulk update
+		generatedQuery := utils.Map(dto.Cart, func(v users_dto.OrderTicketOptionReqDto) string {
+			return fmt.Sprintf("(%d,%d)", v.OptionId, v.Amount)
+		})
+		res := tx.Exec(fmt.Sprintf(`
+			UPDATE ticket_options as target
+				SET 
+					current_capacity = target.current_capacity - c.amount
+				FROM (
+					VALUES
+						%s
+				) AS c(id, amount)
+			WHERE 
+				target.event_id = ? AND 
+				c.id = target.option_id AND
+				target.current_capacity >= c.amount;
+		`, strings.Join(generatedQuery, ",")), dto.EventId)
+		if res.RowsAffected != int64(len(uniqueOptionIds)) {
+			if res.Error != nil {
+				return res.Error
 			}
+			return errors.New("error in updating ticket stock")
 		}
 		return tx.Create(&order).Error
-	}, &sql.TxOptions{
-		Isolation: sql.LevelReadUncommitted,
 	})
 	if err != nil {
 		fmt.Printf("err: %v\n", err)

@@ -19,7 +19,7 @@ func NewDatabaseConnection(env *env.Env) *gorm.DB {
 	}
 	fmt.Println("Database connected!")
 	pg, _ := DB.DB()
-	pg.SetMaxOpenConns(90)
+	pg.SetMaxOpenConns(20)
 	return DB
 }
 
