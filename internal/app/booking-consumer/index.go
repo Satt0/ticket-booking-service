@@ -19,9 +19,6 @@ func NewBookingJob(deps *shared.SharedDeps, lc fx.Lifecycle) *BookingJob {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			return nil
-		},
 		OnStop: func(ctx context.Context) error {
 			cancel()
 			wg.Wait()
